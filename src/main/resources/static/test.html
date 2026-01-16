@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>JobSearch — test UI</title>
+    <style>
+        body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        label { display: block; font-size: 12px; color: #444; margin-bottom: 4px; }
+        input, textarea { width: 320px; max-width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        textarea { height: 90px; resize: vertical; }
+        button { padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; background: #fff; cursor: pointer; }
+        button:hover { background: #f6f6f6; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; vertical-align: top; }
+        th { background: #fafafa; }
+        .muted { color: #666; font-size: 12px; }
+        .error { color: #b00020; white-space: pre-wrap; }
+        .ok { color: #0a7a2f; white-space: pre-wrap; }
+        .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+    </style>
+</head>
+<body>
+<h2>JobSearch — простая проверка API</h2>
+<div class="muted">Эндпойнты: GET /vacancy, POST /vacancy</div>
+
+<div class="card">
+    <h3>Создать вакансию</h3>
+    <div class="row">
+        <div>
+            <label for="companyName">Company name</label>
+            <input id="companyName" placeholder="Напр. ACME" />
+        </div>
+        <div>
+            <label for="vacancyName">Vacancy name</label>
+            <input id="vacancyName" placeholder="Напр. Java Developer" />
+        </div>
+    </div>
+    <div style="margin-top:12px;">
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Короткое описание..."></textarea>
+    </div>
+    <div class="row" style="margin-top:12px; align-items:center;">
+        <button id="createBtn">POST /vacancy</button>
+        <button id="refreshBtn">Обновить список</button>
+        <span id="status" class="muted"></span>
+    </div>
+    <div id="result" class="mono" style="margin-top:12px;"></div>
+</div>
+
+<div class="card">
+    <h3>Список вакансий</h3>
+    <table>
+        <thead>
+        <tr>
+            <th style="width:80px;">ID</th>
+            <th style="width:220px;">Company</th>
+            <th style="width:220px;">Vacancy</th>
+            <th>Description</th>
+        </tr>
+        </thead>
+        <tbody id="tbody">
+        <tr><td colspan="4" class="muted">Нажми “Обновить список”</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // Если ты откроешь файл НЕ через Spring (file://), будет CORS.
+    // Поэтому лучше открывать http://localhost:8080/test.html (как статический ресурс приложения).
+    const API_BASE = ""; // оставь пустым для same-origin; иначе укажи "http://localhost:8080"
+
+    const els = {
+        companyName: document.getElementById("companyName"),
+        vacancyName: document.getElementById("vacancyName"),
+        description: document.getElementById("description"),
+        createBtn: document.getElementById("createBtn"),
+        refreshBtn: document.getElementById("refreshBtn"),
+        status: document.getElementById("status"),
+        result: document.getElementById("result"),
+        tbody: document.getElementById("tbody"),
+    };
+
+    function setStatus(text) {
+        els.status.textContent = text || "";
+    }
+
+    function showResultOk(obj) {
+        els.result.className = "ok mono";
+        els.result.textContent = JSON.stringify(obj, null, 2);
+    }
+
+    function showResultErr(text) {
+        els.result.className = "error mono";
+        els.result.textContent = text;
+    }
+
+    async function refresh() {
+        setStatus("Загрузка...");
+        els.result.textContent = "";
+        try {
+            const res = await fetch(API_BASE + "/vacancy", { method: "GET" });
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error(`GET /vacancy -> ${res.status} ${res.statusText}\n` + t);
+            }
+            const data = await res.json();
+            renderTable(Array.isArray(data) ? data : []);
+            setStatus(`OK: ${data.length} шт.`);
+        } catch (e) {
+            setStatus("Ошибка");
+            showResultErr(String(e));
+        }
+    }
+
+    function renderTable(items) {
+        if (!items.length) {
+            els.tbody.innerHTML = `<tr><td colspan="4" class="muted">Пока пусто</td></tr>`;
+            return;
+        }
+        els.tbody.innerHTML = items.map(v => `
+        <tr>
+          <td>${escapeHtml(v.id ?? "")}</td>
+          <td>${escapeHtml(v.companyName ?? "")}</td>
+          <td>${escapeHtml(v.vacancyName ?? "")}</td>
+          <td>${escapeHtml(v.description ?? "")}</td>
+        </tr>
+      `).join("");
+    }
+
+    function escapeHtml(s) {
+        return String(s)
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
+    async function createVacancy() {
+        const payload = {
+            // id специально не отправляем — пусть БД сгенерит
+            companyName: els.companyName.value.trim(),
+            vacancyName: els.vacancyName.value.trim(),
+            description: els.description.value.trim(),
+        };
+
+        if (!payload.companyName || !payload.vacancyName) {
+            showResultErr("Заполни хотя бы companyName и vacancyName.");
+            return;
+        }
+
+        setStatus("Отправка...");
+        els.result.textContent = "";
+        try {
+            const res = await fetch(API_BASE + "/vacancy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (!res.ok) {
+                const t = await res.text();
+                throw new Error(`POST /vacancy -> ${res.status} ${res.statusText}\n` + t);
+            }
+
+            const created = await res.json();
+            showResultOk(created);
+
+            // чуть удобства
+            els.description.value = "";
+            await refresh();
+            setStatus("Создано ✅");
+        } catch (e) {
+            setStatus("Ошибка");
+            showResultErr(String(e));
+        }
+    }
+
+    els.refreshBtn.addEventListener("click", refresh);
+    els.createBtn.addEventListener("click", createVacancy);
+
+    // автозагрузка списка при открытии страницы
+    refresh();
+</script>
+</body>
+</html>
