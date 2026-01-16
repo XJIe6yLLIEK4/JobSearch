@@ -1,5 +1,6 @@
 package ru.safronov.jobsearch.controller;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import ru.safronov.jobsearch.dto.VacancyDto;
@@ -19,7 +20,7 @@ public class VacancyController {
     }
 
     @PostMapping
-    public VacancyDto createVacancy(@RequestBody VacancyDto dto) {
+    public VacancyDto createVacancy(@RequestBody @Valid VacancyDto dto) {
         return vacancyService.createVacancy(dto);
     }
 }

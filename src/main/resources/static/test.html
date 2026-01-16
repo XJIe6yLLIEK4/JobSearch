@@ -6,7 +6,7 @@
     <title>JobSearch — test UI</title>
     <style>
         body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
-        .row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
         .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
         label { display: block; font-size: 12px; color: #444; margin-bottom: 4px; }
         input, textarea { width: 320px; max-width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
@@ -17,41 +17,49 @@
         th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; vertical-align: top; }
         th { background: #fafafa; }
         .muted { color: #666; font-size: 12px; }
-        .error { color: #b00020; white-space: pre-wrap; }
-        .ok { color: #0a7a2f; white-space: pre-wrap; }
         .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+        .pre { background:#fafafa; border:1px solid #eee; border-radius:10px; padding:12px; overflow:auto; white-space: pre-wrap; }
     </style>
 </head>
 <body>
-<h2>JobSearch — простая проверка API</h2>
+
+<h2>JobSearch — тест API (без клиентской валидации)</h2>
 <div class="muted">Эндпойнты: GET /vacancy, POST /vacancy</div>
 
 <div class="card">
     <h3>Создать вакансию</h3>
+
     <div class="row">
         <div>
-            <label for="companyName">Company name</label>
-            <input id="companyName" placeholder="Напр. ACME" />
+            <label for="companyName">companyName</label>
+            <input id="companyName" placeholder="можно оставить пустым — проверим бэк" />
         </div>
         <div>
-            <label for="vacancyName">Vacancy name</label>
-            <input id="vacancyName" placeholder="Напр. Java Developer" />
+            <label for="vacancyName">vacancyName</label>
+            <input id="vacancyName" placeholder="можно оставить пустым — проверим бэк" />
         </div>
     </div>
+
     <div style="margin-top:12px;">
-        <label for="description">Description</label>
-        <textarea id="description" placeholder="Короткое описание..."></textarea>
+        <label for="description">description</label>
+        <textarea id="description" placeholder="можно оставить пустым"></textarea>
     </div>
-    <div class="row" style="margin-top:12px; align-items:center;">
-        <button id="createBtn">POST /vacancy</button>
-        <button id="refreshBtn">Обновить список</button>
+
+    <div class="row" style="margin-top:12px;">
+        <button id="postBtn">POST /vacancy</button>
+        <button id="getBtn">GET /vacancy</button>
+        <button id="clearBtn">Очистить вывод</button>
         <span id="status" class="muted"></span>
     </div>
-    <div id="result" class="mono" style="margin-top:12px;"></div>
+
+    <div style="margin-top:12px;">
+        <div class="muted">Ответ сервера (как есть):</div>
+        <pre id="out" class="pre mono"></pre>
+    </div>
 </div>
 
 <div class="card">
-    <h3>Список вакансий</h3>
+    <h3>Список вакансий (если GET вернул массив)</h3>
     <table>
         <thead>
         <tr>
@@ -62,73 +70,25 @@
         </tr>
         </thead>
         <tbody id="tbody">
-        <tr><td colspan="4" class="muted">Нажми “Обновить список”</td></tr>
+        <tr><td colspan="4" class="muted">Нажми “GET /vacancy”</td></tr>
         </tbody>
     </table>
 </div>
 
 <script>
-    // Если ты откроешь файл НЕ через Spring (file://), будет CORS.
-    // Поэтому лучше открывать http://localhost:8080/test.html (как статический ресурс приложения).
-    const API_BASE = ""; // оставь пустым для same-origin; иначе укажи "http://localhost:8080"
-
     const els = {
         companyName: document.getElementById("companyName"),
         vacancyName: document.getElementById("vacancyName"),
         description: document.getElementById("description"),
-        createBtn: document.getElementById("createBtn"),
-        refreshBtn: document.getElementById("refreshBtn"),
+        postBtn: document.getElementById("postBtn"),
+        getBtn: document.getElementById("getBtn"),
+        clearBtn: document.getElementById("clearBtn"),
         status: document.getElementById("status"),
-        result: document.getElementById("result"),
+        out: document.getElementById("out"),
         tbody: document.getElementById("tbody"),
     };
 
-    function setStatus(text) {
-        els.status.textContent = text || "";
-    }
-
-    function showResultOk(obj) {
-        els.result.className = "ok mono";
-        els.result.textContent = JSON.stringify(obj, null, 2);
-    }
-
-    function showResultErr(text) {
-        els.result.className = "error mono";
-        els.result.textContent = text;
-    }
-
-    async function refresh() {
-        setStatus("Загрузка...");
-        els.result.textContent = "";
-        try {
-            const res = await fetch(API_BASE + "/vacancy", { method: "GET" });
-            if (!res.ok) {
-                const t = await res.text();
-                throw new Error(`GET /vacancy -> ${res.status} ${res.statusText}\n` + t);
-            }
-            const data = await res.json();
-            renderTable(Array.isArray(data) ? data : []);
-            setStatus(`OK: ${data.length} шт.`);
-        } catch (e) {
-            setStatus("Ошибка");
-            showResultErr(String(e));
-        }
-    }
-
-    function renderTable(items) {
-        if (!items.length) {
-            els.tbody.innerHTML = `<tr><td colspan="4" class="muted">Пока пусто</td></tr>`;
-            return;
-        }
-        els.tbody.innerHTML = items.map(v => `
-        <tr>
-          <td>${escapeHtml(v.id ?? "")}</td>
-          <td>${escapeHtml(v.companyName ?? "")}</td>
-          <td>${escapeHtml(v.vacancyName ?? "")}</td>
-          <td>${escapeHtml(v.description ?? "")}</td>
-        </tr>
-      `).join("");
-    }
+    function setStatus(t) { els.status.textContent = t || ""; }
 
     function escapeHtml(s) {
         return String(s)
@@ -139,51 +99,90 @@
             .replaceAll("'", "&#039;");
     }
 
-    async function createVacancy() {
-        const payload = {
-            // id специально не отправляем — пусть БД сгенерит
-            companyName: els.companyName.value.trim(),
-            vacancyName: els.vacancyName.value.trim(),
-            description: els.description.value.trim(),
-        };
+    async function callApi(path, options) {
+        setStatus(`${options.method} ${path} ...`);
+        els.out.textContent = "";
 
-        if (!payload.companyName || !payload.vacancyName) {
-            showResultErr("Заполни хотя бы companyName и vacancyName.");
+        const res = await fetch(path, options);
+        const ct = res.headers.get("content-type") || "";
+        const raw = await res.text();
+
+        let json = null;
+        try { json = raw ? JSON.parse(raw) : null; } catch (_) { /* ignore */ }
+
+        // Печатаем ТО, ЧТО ВЕРНУЛ СЕРВЕР (HTTP + body)
+        let out = [];
+        out.push(`HTTP ${res.status} ${res.statusText}`);
+        out.push(`Content-Type: ${ct || "(none)"}`);
+        out.push("");
+        out.push("Raw body:");
+        out.push(raw || "(empty)");
+        if (json) {
+            out.push("");
+            out.push("Parsed JSON:");
+            out.push(JSON.stringify(json, null, 2));
+        }
+        els.out.textContent = out.join("\n");
+
+        return { res, raw, json };
+    }
+
+    function renderTableIfArray(json) {
+        if (!Array.isArray(json)) return;
+
+        if (json.length === 0) {
+            els.tbody.innerHTML = `<tr><td colspan="4" class="muted">Пока пусто</td></tr>`;
             return;
         }
 
-        setStatus("Отправка...");
-        els.result.textContent = "";
+        els.tbody.innerHTML = json.map(v => `
+      <tr>
+        <td>${escapeHtml(v.id ?? "")}</td>
+        <td>${escapeHtml(v.companyName ?? "")}</td>
+        <td>${escapeHtml(v.vacancyName ?? "")}</td>
+        <td>${escapeHtml(v.description ?? "")}</td>
+      </tr>
+    `).join("");
+    }
+
+    els.postBtn.addEventListener("click", async () => {
+        // НИКАКОЙ клиентской валидации — отправляем как есть
+        const payload = {
+            companyName: els.companyName.value, // оставляем как ввели (может быть пустым)
+            vacancyName: els.vacancyName.value,
+            description: els.description.value,
+        };
+
         try {
-            const res = await fetch(API_BASE + "/vacancy", {
+            await callApi("/vacancy", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
             });
-
-            if (!res.ok) {
-                const t = await res.text();
-                throw new Error(`POST /vacancy -> ${res.status} ${res.statusText}\n` + t);
-            }
-
-            const created = await res.json();
-            showResultOk(created);
-
-            // чуть удобства
-            els.description.value = "";
-            await refresh();
-            setStatus("Создано ✅");
+            setStatus("Готово");
         } catch (e) {
-            setStatus("Ошибка");
-            showResultErr(String(e));
+            // Это не “валидация”, это техническая ошибка fetch (например, сервер недоступен)
+            els.out.textContent = String(e);
+            setStatus("Fetch error");
         }
-    }
+    });
 
-    els.refreshBtn.addEventListener("click", refresh);
-    els.createBtn.addEventListener("click", createVacancy);
+    els.getBtn.addEventListener("click", async () => {
+        try {
+            const r = await callApi("/vacancy", { method: "GET" });
+            renderTableIfArray(r.json);
+            setStatus("Готово");
+        } catch (e) {
+            els.out.textContent = String(e);
+            setStatus("Fetch error");
+        }
+    });
 
-    // автозагрузка списка при открытии страницы
-    refresh();
+    els.clearBtn.addEventListener("click", () => {
+        els.out.textContent = "";
+        els.tbody.innerHTML = `<tr><td colspan="4" class="muted">Нажми “GET /vacancy”</td></tr>`;
+        setStatus("");
+    });
 </script>
 </body>
 </html>
