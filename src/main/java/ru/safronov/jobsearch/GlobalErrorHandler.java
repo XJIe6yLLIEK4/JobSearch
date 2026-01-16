@@ -22,8 +22,8 @@ public class GlobalErrorHandler {
 
     // 400: кривой JSON / не смогли распарсить тело запроса
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ApiError handleBadJson(HttpMessageNotReadableException ex) {
+    @ExceptionHandler({HttpMessageNotReadableException.class, IllegalArgumentException.class})
+    public ApiError handleBadJson(Exception ex) {
         return new ApiError(ex.getMessage());
     }
 

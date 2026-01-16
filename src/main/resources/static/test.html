@@ -4,68 +4,129 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>JobSearch — test UI</title>
+
+    <!-- чтобы браузер не ходил за /favicon.ico -->
+    <link rel="icon" href="data:,">
+
     <style>
         body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; }
         .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: end; }
-        .card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+        .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
         label { display: block; font-size: 12px; color: #444; margin-bottom: 4px; }
-        input, textarea { width: 320px; max-width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; }
+        input, textarea, select { width: 320px; max-width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 10px; }
         textarea { height: 90px; resize: vertical; }
-        button { padding: 10px 14px; border: 1px solid #ccc; border-radius: 8px; background: #fff; cursor: pointer; }
+        button { padding: 10px 14px; border: 1px solid #ccc; border-radius: 10px; background: #fff; cursor: pointer; }
         button:hover { background: #f6f6f6; }
         table { border-collapse: collapse; width: 100%; }
         th, td { border-bottom: 1px solid #eee; padding: 10px; text-align: left; vertical-align: top; }
         th { background: #fafafa; }
         .muted { color: #666; font-size: 12px; }
         .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
-        .pre { background:#fafafa; border:1px solid #eee; border-radius:10px; padding:12px; overflow:auto; white-space: pre-wrap; }
+        .pre { background:#fafafa; border:1px solid #eee; border-radius:12px; padding:12px; overflow:auto; white-space: pre-wrap; }
+        .pill { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size:12px; color:#444; background:#fff; }
+        .split { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        @media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-<h2>JobSearch — тест API (без клиентской валидации)</h2>
-<div class="muted">Эндпойнты: GET /vacancy, POST /vacancy</div>
+<h2>JobSearch — тест UI (без клиентской валидации)</h2>
+<div class="muted">
+    API: <span class="pill">/vacancy</span> • Actuator: <span class="pill">/actuator/health</span> <span class="pill">/actuator/info</span> <span class="pill">/actuator/metrics</span>
+</div>
 
-<div class="card">
-    <h3>Создать вакансию</h3>
+<div class="split" style="margin-top:16px;">
 
-    <div class="row">
-        <div>
-            <label for="companyName">companyName</label>
-            <input id="companyName" placeholder="можно оставить пустым — проверим бэк" />
+    <!-- VACANCY -->
+    <div class="card">
+        <h3>Vacancy API</h3>
+
+        <div class="row">
+            <div>
+                <label for="id">id (для GET by id / PUT / DELETE)</label>
+                <input id="id" placeholder="например: 1" />
+            </div>
+            <div>
+                <button id="getAllBtn">GET /vacancy</button>
+                <button id="getByIdBtn">GET /vacancy/{id}</button>
+            </div>
         </div>
-        <div>
-            <label for="vacancyName">vacancyName</label>
-            <input id="vacancyName" placeholder="можно оставить пустым — проверим бэк" />
+
+        <div class="row" style="margin-top:12px;">
+            <div>
+                <label for="companyName">companyName</label>
+                <input id="companyName" placeholder="можно оставить пустым — проверим бэк" />
+            </div>
+            <div>
+                <label for="vacancyName">vacancyName</label>
+                <input id="vacancyName" placeholder="можно оставить пустым — проверим бэк" />
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <label for="description">description</label>
+            <textarea id="description" placeholder="можно оставить пустым"></textarea>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+            <button id="postBtn">POST /vacancy</button>
+            <button id="putBtn">PUT /vacancy/{id}</button>
+            <button id="delBtn">DELETE /vacancy/{id}</button>
+            <button id="clearBtn">Очистить вывод</button>
+            <span id="status" class="muted"></span>
+        </div>
+
+        <div style="margin-top:12px;">
+            <div class="muted">Ответ сервера (как есть):</div>
+            <pre id="out" class="pre mono"></pre>
         </div>
     </div>
 
-    <div style="margin-top:12px;">
-        <label for="description">description</label>
-        <textarea id="description" placeholder="можно оставить пустым"></textarea>
+    <!-- ACTUATOR -->
+    <div class="card">
+        <h3>Actuator</h3>
+
+        <div class="row">
+            <button id="healthBtn">GET /actuator/health</button>
+            <button id="infoBtn">GET /actuator/info</button>
+            <button id="metricsListBtn">GET /actuator/metrics</button>
+        </div>
+
+        <div class="row" style="margin-top:12px;">
+            <div>
+                <label for="metricSelect">metric name</label>
+                <select id="metricSelect">
+                    <option value="">(сначала нажми “GET /actuator/metrics”)</option>
+                </select>
+            </div>
+            <div>
+                <label for="metricQuery">query (опционально)</label>
+                <input id="metricQuery" placeholder='например: tag=method:GET&tag=uri:/vacancy' />
+            </div>
+            <div>
+                <button id="metricBtn">GET /actuator/metrics/{name}</button>
+            </div>
+        </div>
+
+        <div style="margin-top:12px;">
+            <div class="muted">Ответ actuator (как есть):</div>
+            <pre id="actOut" class="pre mono"></pre>
+        </div>
     </div>
 
-    <div class="row" style="margin-top:12px;">
-        <button id="postBtn">POST /vacancy</button>
-        <button id="getBtn">GET /vacancy</button>
-        <button id="clearBtn">Очистить вывод</button>
-        <span id="status" class="muted"></span>
-    </div>
-
-    <div style="margin-top:12px;">
-        <div class="muted">Ответ сервера (как есть):</div>
-        <pre id="out" class="pre mono"></pre>
-    </div>
 </div>
 
 <div class="card">
-    <h3>Список вакансий (если GET вернул массив)</h3>
-    <table>
+    <h3>Список вакансий (если GET /vacancy вернул массив)</h3>
+    <div class="muted">
+        В твоей версии DTO не содержит <code>id</code>, поэтому колонка ID может быть пустой.
+    </div>
+    <table style="margin-top:10px;">
         <thead>
         <tr>
-            <th style="width:80px;">ID</th>
-            <th style="width:220px;">Company</th>
-            <th style="width:220px;">Vacancy</th>
+            <th style="width:90px;">ID</th>
+            <th style="width:240px;">Company</th>
+            <th style="width:240px;">Vacancy</th>
             <th>Description</th>
         </tr>
         </thead>
@@ -76,15 +137,33 @@
 </div>
 
 <script>
+    const API_BASE = "";          // same-origin
+    const ACTUATOR_BASE = "/actuator";
+
     const els = {
+        id: document.getElementById("id"),
         companyName: document.getElementById("companyName"),
         vacancyName: document.getElementById("vacancyName"),
         description: document.getElementById("description"),
+
+        getAllBtn: document.getElementById("getAllBtn"),
+        getByIdBtn: document.getElementById("getByIdBtn"),
         postBtn: document.getElementById("postBtn"),
-        getBtn: document.getElementById("getBtn"),
+        putBtn: document.getElementById("putBtn"),
+        delBtn: document.getElementById("delBtn"),
         clearBtn: document.getElementById("clearBtn"),
+
         status: document.getElementById("status"),
         out: document.getElementById("out"),
+
+        healthBtn: document.getElementById("healthBtn"),
+        infoBtn: document.getElementById("infoBtn"),
+        metricsListBtn: document.getElementById("metricsListBtn"),
+        metricBtn: document.getElementById("metricBtn"),
+        metricSelect: document.getElementById("metricSelect"),
+        metricQuery: document.getElementById("metricQuery"),
+        actOut: document.getElementById("actOut"),
+
         tbody: document.getElementById("tbody"),
     };
 
@@ -99,9 +178,9 @@
             .replaceAll("'", "&#039;");
     }
 
-    async function callApi(path, options) {
+    async function callApi(path, options, outEl) {
         setStatus(`${options.method} ${path} ...`);
-        els.out.textContent = "";
+        outEl.textContent = "";
 
         const res = await fetch(path, options);
         const ct = res.headers.get("content-type") || "";
@@ -110,20 +189,21 @@
         let json = null;
         try { json = raw ? JSON.parse(raw) : null; } catch (_) { /* ignore */ }
 
-        // Печатаем ТО, ЧТО ВЕРНУЛ СЕРВЕР (HTTP + body)
-        let out = [];
-        out.push(`HTTP ${res.status} ${res.statusText}`);
-        out.push(`Content-Type: ${ct || "(none)"}`);
-        out.push("");
-        out.push("Raw body:");
-        out.push(raw || "(empty)");
+        // печатаем ТО, ЧТО ВЕРНУЛ СЕРВЕР
+        const lines = [];
+        lines.push(`HTTP ${res.status} ${res.statusText}`);
+        lines.push(`Content-Type: ${ct || "(none)"}`);
+        lines.push("");
+        lines.push("Raw body:");
+        lines.push(raw || "(empty)");
         if (json) {
-            out.push("");
-            out.push("Parsed JSON:");
-            out.push(JSON.stringify(json, null, 2));
+            lines.push("");
+            lines.push("Parsed JSON:");
+            lines.push(JSON.stringify(json, null, 2));
         }
-        els.out.textContent = out.join("\n");
+        outEl.textContent = lines.join("\n");
 
+        setStatus("Готово");
         return { res, raw, json };
     }
 
@@ -145,33 +225,72 @@
     `).join("");
     }
 
-    els.postBtn.addEventListener("click", async () => {
+    function vacancyPayloadFromInputs() {
         // НИКАКОЙ клиентской валидации — отправляем как есть
-        const payload = {
-            companyName: els.companyName.value, // оставляем как ввели (может быть пустым)
+        return {
+            companyName: els.companyName.value,
             vacancyName: els.vacancyName.value,
             description: els.description.value,
         };
+    }
 
+    function idValue() {
+        return String(els.id.value || "").trim();
+    }
+
+    // Vacancy buttons
+    els.getAllBtn.addEventListener("click", async () => {
         try {
-            await callApi("/vacancy", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
-            setStatus("Готово");
+            const r = await callApi(API_BASE + "/vacancy", { method: "GET" }, els.out);
+            renderTableIfArray(r.json);
         } catch (e) {
-            // Это не “валидация”, это техническая ошибка fetch (например, сервер недоступен)
             els.out.textContent = String(e);
             setStatus("Fetch error");
         }
     });
 
-    els.getBtn.addEventListener("click", async () => {
+    els.getByIdBtn.addEventListener("click", async () => {
         try {
-            const r = await callApi("/vacancy", { method: "GET" });
-            renderTableIfArray(r.json);
-            setStatus("Готово");
+            const id = idValue();
+            const r = await callApi(API_BASE + `/vacancy/${encodeURIComponent(id)}`, { method: "GET" }, els.out);
+            // если вернулся объект — таблицу не трогаем
+        } catch (e) {
+            els.out.textContent = String(e);
+            setStatus("Fetch error");
+        }
+    });
+
+    els.postBtn.addEventListener("click", async () => {
+        try {
+            await callApi(API_BASE + "/vacancy", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(vacancyPayloadFromInputs()),
+            }, els.out);
+        } catch (e) {
+            els.out.textContent = String(e);
+            setStatus("Fetch error");
+        }
+    });
+
+    els.putBtn.addEventListener("click", async () => {
+        try {
+            const id = idValue();
+            await callApi(API_BASE + `/vacancy/${encodeURIComponent(id)}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(vacancyPayloadFromInputs()),
+            }, els.out);
+        } catch (e) {
+            els.out.textContent = String(e);
+            setStatus("Fetch error");
+        }
+    });
+
+    els.delBtn.addEventListener("click", async () => {
+        try {
+            const id = idValue();
+            await callApi(API_BASE + `/vacancy/${encodeURIComponent(id)}`, { method: "DELETE" }, els.out);
         } catch (e) {
             els.out.textContent = String(e);
             setStatus("Fetch error");
@@ -180,9 +299,56 @@
 
     els.clearBtn.addEventListener("click", () => {
         els.out.textContent = "";
+        els.actOut.textContent = "";
         els.tbody.innerHTML = `<tr><td colspan="4" class="muted">Нажми “GET /vacancy”</td></tr>`;
         setStatus("");
     });
+
+    // Actuator buttons
+    els.healthBtn.addEventListener("click", async () => {
+        try {
+            await callApi(ACTUATOR_BASE + "/health", { method: "GET" }, els.actOut);
+        } catch (e) {
+            els.actOut.textContent = String(e);
+        }
+    });
+
+    els.infoBtn.addEventListener("click", async () => {
+        try {
+            await callApi(ACTUATOR_BASE + "/info", { method: "GET" }, els.actOut);
+        } catch (e) {
+            els.actOut.textContent = String(e);
+        }
+    });
+
+    els.metricsListBtn.addEventListener("click", async () => {
+        try {
+            const r = await callApi(ACTUATOR_BASE + "/metrics", { method: "GET" }, els.actOut);
+
+            // Заполняем select метрик
+            const names = r.json && Array.isArray(r.json.names) ? r.json.names : [];
+            els.metricSelect.innerHTML = names.length
+                ? names.map(n => `<option value="${escapeHtml(n)}">${escapeHtml(n)}</option>`).join("")
+                : `<option value="">(метрики не получены)</option>`;
+        } catch (e) {
+            els.actOut.textContent = String(e);
+        }
+    });
+
+    els.metricBtn.addEventListener("click", async () => {
+        try {
+            const name = els.metricSelect.value || "";
+            const q = (els.metricQuery.value || "").trim();
+            const url = ACTUATOR_BASE + `/metrics/${encodeURIComponent(name)}` + (q ? `?${q}` : "");
+            await callApi(url, { method: "GET" }, els.actOut);
+        } catch (e) {
+            els.actOut.textContent = String(e);
+        }
+    });
+
+    // авто-подгрузка health при открытии (можно удалить, если не надо)
+    els.healthBtn.click();
 </script>
+
 </body>
 </html>

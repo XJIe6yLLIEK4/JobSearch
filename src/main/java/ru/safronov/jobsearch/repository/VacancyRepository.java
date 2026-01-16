@@ -5,5 +5,5 @@ import org.springframework.stereotype.Repository;
 import ru.safronov.jobsearch.model.Vacancy;
 
 @Repository
-public interface VacancyRepository extends JpaRepository<Vacancy,Long> {
+public interface VacancyRepository extends JpaRepository<Vacancy, Long> {
 }
