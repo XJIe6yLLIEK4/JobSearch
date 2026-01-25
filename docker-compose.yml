@@ -1,4 +1,19 @@
 services:
+  app:
+    build: .
+    container_name: app-jobsearch
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/jobsearch
+      SPRING_DATASOURCE_USERNAME: jobsearch
+      SPRING_DATASOURCE_PASSWORD: jobsearch
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
   db:
     image: postgres:16-alpine
     container_name: jobsearch-db
@@ -6,8 +21,6 @@ services:
       POSTGRES_DB: jobsearch
       POSTGRES_USER: jobsearch
       POSTGRES_PASSWORD: jobsearch
-    ports:
-      - "5432:5432"
     volumes:
       - jobsearch_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -43,6 +56,8 @@ services:
       - ./observability/promtail.yml:/etc/promtail/promtail.yml:ro
       - ./logs:/var/log/jobsearch:ro
       - promtail_positions:/tmp
+    depends_on:
+      - loki
 
   loki_init:
     image: alpine:3.20
