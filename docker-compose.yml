@@ -14,6 +14,7 @@ services:
         condition: service_healthy
     volumes:
       - ./logs:/app/logs
+
   db:
     image: postgres:16-alpine
     container_name: jobsearch-db
@@ -77,21 +78,14 @@ services:
       - loki_data:/loki
     depends_on:
       - loki_init
-
-#  nginx:
-#    image: nginx:1.27-alpine
-#    container_name: nginx
-#    ports:
-#      - "80:80"
-#    volumes:
-#      - ./nginx/conf.d:/etc/nginx/conf.d:ro
-#    depends_on:
-#      - app
-#      - grafana
-#      - prometheus
-#      - loki
-#    restart: unless-stopped
-
+  frontend:
+    build: ./frontend
+    container_name: jobsearch-frontend
+    ports:
+      - "127.0.0.1:80:80"
+    depends_on:
+      - app
+    restart: unless-stopped
 volumes:
   jobsearch_pgdata:
   jobsearch_grafana:
