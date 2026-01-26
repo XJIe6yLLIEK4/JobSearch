@@ -78,14 +78,14 @@ services:
       - loki_data:/loki
     depends_on:
       - loki_init
-  frontend:
-    build: ./frontend
-    container_name: jobsearch-frontend
-    ports:
-      - "127.0.0.1:80:80"
-    depends_on:
-      - app
-    restart: unless-stopped
+#  frontend:
+#    build: ./frontend
+#    container_name: jobsearch-frontend
+#    ports:
+#      - "127.0.0.1:80:80"
+#    depends_on:
+#      - app
+#    restart: unless-stopped
 volumes:
   jobsearch_pgdata:
   jobsearch_grafana:
