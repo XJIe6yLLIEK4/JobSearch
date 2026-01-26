@@ -1,1 +1,1 @@
-{"root":["./src/App.tsx","./src/main.tsx","./src/app/api.ts","./src/app/types.ts","./src/components/Toast.tsx","./src/components/VacancyForm.tsx"],"errors":true,"version":"5.8.3"}
+{"root":["./src/app.tsx","./src/main.tsx","./src/app/api.ts","./src/app/types.ts","./src/components/toast.tsx","./src/components/vacancyform.tsx"],"version":"5.9.3"}

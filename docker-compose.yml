@@ -46,6 +46,9 @@ services:
       - "127.0.0.1:3000:3000"
     volumes:
       - jobsearch_grafana:/var/lib/grafana
+    environment:
+      - GF_SERVER_ROOT_URL=https://xjie6ylliek.ru/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     depends_on:
       - prometheus
 
