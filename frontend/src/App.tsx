@@ -40,7 +40,7 @@ export function App() {
     try {
       const created = await api.createVacancy(dto)
       setToast({ kind: 'ok', text: `Создано: #${created.id} ${created.companyName} — ${created.vacancyName}` })
-      setSelected(created)
+      // НЕ переключаемся на редактирование после создания
       await refresh()
     } catch (e: any) {
       setToast({ kind: 'error', text: e?.message ?? 'Ошибка создания' })
@@ -100,82 +100,89 @@ export function App() {
         </div>
       </div>
 
-      <div className="grid">
-        <div className="card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-            <p className="card-title">Список вакансий</p>
-            <span className="badge">
-              <span>Всего:</span> <span className="mono">{items.length}</span> · <span>Показано:</span> <span className="mono">{filtered.length}</span>
-            </span>
-          </div>
-
-          <table className="table">
-            <thead>
-              <tr>
-                <th style={{ width: 70 }}>ID</th>
-                <th>Компания</th>
-                <th>Вакансия</th>
-                <th>Описание</th>
-                <th style={{ width: 170 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((v) => (
-                <tr key={v.id}>
-                  <td className="mono">{v.id}</td>
-                  <td>{v.companyName}</td>
-                  <td>{v.vacancyName}</td>
-                  <td style={{ color: 'var(--muted)' }}>{v.description || <span className="small">(нет)</span>}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                      <button className="button" onClick={() => setSelected(v)}>
-                        Редактировать
-                      </button>
-                      <button className="button danger" onClick={() => v.id && onDelete(v.id)} disabled={!v.id || loading}>
-                        Удалить
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {!loading && filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={5} style={{ color: 'var(--muted)', padding: 16 }}>
-                    Ничего не найдено.
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-
-          {toast ? <Toast kind={toast.kind} text={toast.text} onClose={() => setToast(null)} /> : null}
-        </div>
-
-        <div className="card">
-          <p className="card-title">{selected ? `Редактирование #${selected.id}` : 'Создание вакансии'}</p>
-          {selected ? (
-            <>
-              <VacancyForm
-                mode="edit"
-                initial={selected}
-                busy={loading}
-                onSubmit={onUpdate}
-                onCancel={() => setSelected(null)}
-              />
-              <div className="small" style={{ marginTop: 10 }}>
-                Под капотом: PUT <span className="mono">/vacancy/{selected.id}</span>
-              </div>
-            </>
-          ) : (
-            <>
-              <VacancyForm mode="create" busy={loading} onSubmit={onCreate} />
-              <div className="small" style={{ marginTop: 10 }}>
-                Под капотом: POST <span className="mono">/vacancy</span>
-              </div>
-            </>
-          )}
+      {/* Форма создания новой вакансии */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <p className="card-title">Создать новую вакансию</p>
+        <VacancyForm mode="create" busy={loading} onSubmit={onCreate} />
+        <div className="small" style={{ marginTop: 10 }}>
+          Под капотом: POST <span className="mono">/vacancy</span>
         </div>
       </div>
+
+      {/* Список всех вакансий */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+          <p className="card-title">Список вакансий</p>
+          <span className="badge">
+            <span>Всего:</span> <span className="mono">{items.length}</span> · <span>Показано:</span> <span className="mono">{filtered.length}</span>
+          </span>
+        </div>
+
+        <table className="table">
+          <thead>
+            <tr>
+              <th style={{ width: 70 }}>ID</th>
+              <th>Компания</th>
+              <th>Вакансия</th>
+              <th>Описание</th>
+              <th style={{ width: 170 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((v) => (
+              <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => setSelected(v)}>
+                <td className="mono">{v.id}</td>
+                <td>{v.companyName}</td>
+                <td>{v.vacancyName}</td>
+                <td style={{ color: 'var(--muted)' }}>{v.description || <span className="small">(нет)</span>}</td>
+                <td onClick={(e) => e.stopPropagation()}>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button className="button" onClick={() => setSelected(v)}>
+                      Редактировать
+                    </button>
+                    <button className="button danger" onClick={() => v.id && onDelete(v.id)} disabled={!v.id || loading}>
+                      Удалить
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+            {!loading && filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ color: 'var(--muted)', padding: 16 }}>
+                  Ничего не найдено.
+                </td>
+              </tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Модальное окно редактирования */}
+      {selected && (
+        <div className="modal-overlay" onClick={() => setSelected(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <p className="card-title">Редактирование вакансии #{selected.id}</p>
+              <button className="button" onClick={() => setSelected(null)} style={{ padding: '4px 12px' }}>
+                ✕
+              </button>
+            </div>
+            <VacancyForm
+              mode="edit"
+              initial={selected}
+              busy={loading}
+              onSubmit={onUpdate}
+              onCancel={() => setSelected(null)}
+            />
+            <div className="small" style={{ marginTop: 10 }}>
+              Под капотом: PUT <span className="mono">/vacancy/{selected.id}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast ? <Toast kind={toast.kind} text={toast.text} onClose={() => setToast(null)} /> : null}
 
       <div className="small" style={{ marginTop: 18 }}>
         API ожидается по адресу <span className="mono">/api</span> (в dev это прокси на <span className="mono">localhost:8080</span>, в проде — nginx внутри контейнера).

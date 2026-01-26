@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import type { Vacancy } from '../app/types'
 
 type Props = {
@@ -14,17 +14,37 @@ export function VacancyForm({ mode, initial, busy, onSubmit, onCancel }: Props) 
   const [vacancyName, setVacancyName] = useState(initial?.vacancyName ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
 
+  // Синхронизируем с initial (для режима редактирования)
+  useEffect(() => {
+    setCompanyName(initial?.companyName ?? '')
+    setVacancyName(initial?.vacancyName ?? '')
+    setDescription(initial?.description ?? '')
+  }, [initial])
+
   const canSubmit = useMemo(() => companyName.trim().length > 0 && vacancyName.trim().length > 0, [companyName, vacancyName])
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!canSubmit || busy) return
+
+    const dto: Vacancy = {
+      companyName: companyName.trim(),
+      vacancyName: vacancyName.trim(),
+      description: description.trim() || ''
+    }
+
+    onSubmit(dto)
+
+    // Очищаем форму только в режиме создания
+    if (mode === 'create') {
+      setCompanyName('')
+      setVacancyName('')
+      setDescription('')
+    }
+  }
+
   return (
-    <form
-      className="form"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (!canSubmit || busy) return
-        onSubmit({ companyName: companyName.trim(), vacancyName: vacancyName.trim(), description: description.trim() || '' })
-      }}
-    >
+    <form className="form" onSubmit={handleSubmit}>
       <div className="row">
         <label className="label">
           Компания*
