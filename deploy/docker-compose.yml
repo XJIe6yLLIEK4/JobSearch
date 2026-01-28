@@ -1,7 +1,8 @@
 services:
   app:
     image: ${REGISTRY_IMAGE}:${IMAGE_TAG:-latest}
-    build: ..
+    build:
+      context: ${BUILD_CONTEXT}
     container_name: app-jobsearch
     ports:
       - "${APP_BIND}:${APP_PORT}:8080"
@@ -14,7 +15,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - ./logs:/app/logs
+      - ${LOG_DIR}:${DOCKER_LOG_DIR}
 
   db:
     image: postgres:16-alpine
@@ -60,7 +61,7 @@ services:
     command: -config.file=/etc/promtail/promtail.yml
     volumes:
       - ./observability/promtail.yml:/etc/promtail/promtail.yml:ro
-      - ./logs:/var/log/jobsearch:ro
+      - ${LOG_DIR}:/var/log/jobsearch:ro
       - promtail_positions:/tmp
     depends_on:
       - loki

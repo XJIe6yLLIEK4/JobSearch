@@ -3,6 +3,7 @@ import { api } from './app/api'
 import type { Vacancy } from './app/types'
 import { Toast } from './components/Toast'
 import { VacancyForm } from './components/VacancyForm'
+import pkg from '../package.json'
 
 export function App() {
   const [items, setItems] = useState<Vacancy[]>([])
@@ -10,6 +11,8 @@ export function App() {
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Vacancy | null>(null)
   const [toast, setToast] = useState<{ kind: 'ok' | 'error' | 'info'; text: string } | null>(null)
+  const [backendVersion, setBackendVersion] = useState<string>('n/a')
+  const frontendVersion = pkg.version
 
   async function refresh() {
     setLoading(true)
@@ -27,6 +30,23 @@ export function App() {
     refresh()
   }, [])
 
+  useEffect(() => {
+    let active = true
+    api
+      .getAppInfo()
+      .then((info) => {
+        if (!active) return
+        setBackendVersion(info?.build?.version ?? 'n/a')
+      })
+      .catch(() => {
+        if (!active) return
+        setBackendVersion('n/a')
+      })
+    return () => {
+      active = false
+    }
+  }, [])
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return items
@@ -40,7 +60,6 @@ export function App() {
     try {
       const created = await api.createVacancy(dto)
       setToast({ kind: 'ok', text: `Создано: #${created.id} ${created.companyName} — ${created.vacancyName}` })
-      // НЕ переключаемся на редактирование после создания
       await refresh()
     } catch (e: any) {
       setToast({ kind: 'error', text: e?.message ?? 'Ошибка создания' })
@@ -182,11 +201,11 @@ export function App() {
         </div>
       )}
 
-      {toast ? <Toast kind={toast.kind} text={toast.text} onClose={() => setToast(null)} /> : null}
-
-      <div className="small" style={{ marginTop: 18 }}>
-        API ожидается по адресу <span className="mono">/api</span> (в dev это прокси на <span className="mono">localhost:8080</span>, в проде — nginx внутри контейнера).
+      <div className="footer small">
+        FE v{frontendVersion} · BE v{backendVersion}
       </div>
+
+      {toast ? <Toast kind={toast.kind} text={toast.text} onClose={() => setToast(null)} /> : null}
     </div>
   )
 }

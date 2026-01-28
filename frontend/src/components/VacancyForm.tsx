@@ -14,7 +14,6 @@ export function VacancyForm({ mode, initial, busy, onSubmit, onCancel }: Props) 
   const [vacancyName, setVacancyName] = useState(initial?.vacancyName ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
 
-  // Синхронизируем с initial (для режима редактирования)
   useEffect(() => {
     setCompanyName(initial?.companyName ?? '')
     setVacancyName(initial?.vacancyName ?? '')
@@ -34,13 +33,6 @@ export function VacancyForm({ mode, initial, busy, onSubmit, onCancel }: Props) 
     }
 
     onSubmit(dto)
-
-    // Очищаем форму только в режиме создания
-    if (mode === 'create') {
-      setCompanyName('')
-      setVacancyName('')
-      setDescription('')
-    }
   }
 
   return (

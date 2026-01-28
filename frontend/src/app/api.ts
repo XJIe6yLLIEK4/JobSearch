@@ -1,5 +1,14 @@
 import type { ApiError, Vacancy } from './types'
 
+type ActuatorInfo = {
+  build?: {
+    version?: string
+    name?: string
+    artifact?: string
+    time?: string
+  }
+}
+
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? '/api'
 
 async function readJson<T>(res: Response): Promise<T> {
@@ -8,7 +17,6 @@ async function readJson<T>(res: Response): Promise<T> {
   try {
     return JSON.parse(text) as T
   } catch {
-    // если вдруг backend вернёт не-JSON, отдаём как есть
     return { message: text } as unknown as T
   }
 }
@@ -37,4 +45,5 @@ export const api = {
   updateVacancy: (id: number, dto: Vacancy) =>
     request<Vacancy>(`/vacancy/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
   deleteVacancy: (id: number) => request<Vacancy>(`/vacancy/${id}`, { method: 'DELETE' }),
+  getAppInfo: () => request<ActuatorInfo>('/actuator/info'),
 }

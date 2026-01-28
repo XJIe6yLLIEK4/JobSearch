@@ -92,6 +92,9 @@ jobs:
           GRAFANA_PORT=${{ vars.GRAFANA_PORT }}
           PROM_PORT=${{ vars.PROM_PORT }}
           LOKI_PORT=${{ vars.LOKI_PORT }}
+          
+          LOG_DIR=${{ vars.LOG_DIR }}
+          DOCKER_LOG_DIR=${{ vars.DOCKER_LOG_DIR }}
 
           GF_SERVER_ROOT_URL=${{ vars.GF_SERVER_ROOT_URL }}
           GF_SERVER_SERVE_FROM_SUB_PATH=${{ vars.GF_SERVER_SERVE_FROM_SUB_PATH }}
