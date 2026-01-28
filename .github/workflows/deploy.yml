@@ -1,8 +1,19 @@
-name: ci-cd
+name: Backend ci-cd
 
 on:
   push:
     branches: ["master"]
+    paths:
+      - 'src/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: backend-deploy
+  cancel-in-progress: true
 
 jobs:
   build_and_push:
