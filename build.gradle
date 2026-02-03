@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'ru.safronov'
-version = '0.0.1-SNAPSHOT'
+version = '0.2.0'
 description = 'JobSearch'
 
 java {
@@ -53,3 +53,77 @@ tasks.named('test') {
 springBoot {
     buildInfo()
 }
+
+def deployDir = file("${projectDir}/deploy")
+
+def isWindows = System.getProperty("os.name").toLowerCase().contains("win")
+def dockerPrefix = isWindows ? ["cmd", "/c", "docker"] : ["docker"]
+
+tasks.register("composeUp", Exec) {
+    group = "docker"
+    description = "Start stack (default docker-compose.yml)"
+    workingDir = deployDir
+    commandLine dockerPrefix + ["compose", "up", "-d", "--build"]
+}
+
+tasks.register("composeUpLimits", Exec) {
+    group = "docker"
+    description = "Start stack with perf limits (docker-compose + perf-limits override)"
+    workingDir = deployDir
+    commandLine dockerPrefix + [
+            "compose",
+            "-f", "docker-compose.yml",
+            "-f", "docker-compose.perf-limits.yml",
+            "up", "-d", "--build"
+    ]
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
+tasks.register("composeDown", Exec) {
+    group = "docker"
+    description = "Stop stack and remove volumes"
+    workingDir = deployDir
+    commandLine dockerPrefix + ["compose", "down", "-v"]
+}
+
+def k6Cmd = { String scriptPath ->
+    dockerPrefix + ["compose", "--profile", "loadtest", "run", "--rm", "k6", "run", scriptPath]
+}
+
+tasks.register("k6Smoke", Exec) {
+    group = "k6"
+    description = "Run k6 smoke test"
+    workingDir = deployDir
+    commandLine k6Cmd("perf/k6/smoke.js")
+}
+
+tasks.register("k6Load", Exec) {
+    group = "k6"
+    description = "Run k6 load test"
+    workingDir = deployDir
+    commandLine k6Cmd("perf/k6/load.js")
+}
+
+tasks.register("k6Stress", Exec) {
+    group = "k6"
+    description = "Run k6 stress test"
+    workingDir = deployDir
+    commandLine k6Cmd("perf/k6/stress.js")
+}
+
+tasks.register("perfLoadLocal") {
+    group = "k6"
+    description = "Up (with limits) -> run load -> keep stack running"
+    dependsOn "composeUpLimits"
+    dependsOn "k6Load"
+}
+
+tasks.register("perfLoadLocalClean") {
+    group = "k6"
+    description = "Up (with limits) -> run load -> down -v"
+    dependsOn "composeUpLimits"
+    dependsOn "k6Load"
+    finalizedBy "composeDown"
+}
+

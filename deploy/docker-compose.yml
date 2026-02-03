@@ -95,6 +95,24 @@ services:
       - app
     restart: unless-stopped
 
+  k6:
+    profiles: ["loadtest"]
+    image: grafana/k6:0.45.0
+    container_name: k6
+    working_dir: /work
+    volumes:
+      - ../:/work
+    environment:
+      - BASE_URL=${BASE_URL}
+      - SEED_COUNT=200
+      - HTTP_TIMEOUT=10s
+    entrypoint: ["k6"]
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512m
+
 volumes:
   jobsearch_pgdata:
   jobsearch_grafana:
