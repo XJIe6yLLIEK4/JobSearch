@@ -4,6 +4,7 @@ import {makeVacancyPayload} from "./lib/data.js";
 import {createVacancy, deleteVacancy, getVacancyById} from "./lib/api.js";
 
 export const options = {
+    tags: {testid: "stress"},
     scenarios: {
         spike: {
             executor: "ramping-vus",

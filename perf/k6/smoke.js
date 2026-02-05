@@ -5,6 +5,7 @@ import { makeVacancyPayload } from "./lib/data.js";
 import { createVacancy, getVacancyById, listVacancies, updateVacancy, deleteVacancy } from "./lib/api.js";
 
 export const options = {
+    tags: { testid: "smoke" },
     vus: 1,
     duration: "30s",
     thresholds: {

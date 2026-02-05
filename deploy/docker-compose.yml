@@ -16,6 +16,12 @@ services:
         condition: service_healthy
     volumes:
       - ${LOG_DIR}:${DOCKER_LOG_DIR}
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
 
   db:
     image: postgres:16-alpine
@@ -40,6 +46,10 @@ services:
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-remote-write-receiver
 
   grafana:
     image: grafana/grafana-oss:11.5.0
@@ -48,10 +58,17 @@ services:
       - "${APP_BIND}:${GRAFANA_PORT}:3000"
     volumes:
       - jobsearch_grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+
     environment:
       - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL}
       - GF_SERVER_SERVE_FROM_SUB_PATH=${GF_SERVER_SERVE_FROM_SUB_PATH}
       - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/k6-jobsearch.json
+
     depends_on:
       - prometheus
 
@@ -101,17 +118,27 @@ services:
     container_name: k6
     working_dir: /work
     volumes:
-      - ../:/work
+      - ${K6_ROOT_DIR}:/work
     environment:
-      - BASE_URL=${BASE_URL}
+      - BASE_URL=http://app:8080
       - SEED_COUNT=200
       - HTTP_TIMEOUT=10s
+      - K6_OUT=experimental-prometheus-rw
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_STATS=p(95),p(99),min,max
+      - K6_PROMETHEUS_RW_STALE_MARKERS=true
+      - K6_READINESS_TIMEOUT_SEC=${K6_READINESS_TIMEOUT_SEC}
     entrypoint: ["k6"]
     deploy:
       resources:
         limits:
           cpus: "1.0"
           memory: 512m
+    depends_on:
+      prometheus:
+        condition: service_started
+      app:
+        condition: service_healthy
 
 volumes:
   jobsearch_pgdata:

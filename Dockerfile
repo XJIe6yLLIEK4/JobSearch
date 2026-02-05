@@ -12,6 +12,8 @@ RUN ./gradlew --no-daemon clean bootJar
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/*
 RUN addgroup --system spring && adduser --system --ingroup spring spring
 COPY --from=build /workspace/build/libs/*.jar /app/app.jar
 RUN mkdir -p /app/logs && chown -R spring:spring /app

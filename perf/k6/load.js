@@ -5,6 +5,7 @@ import { makeVacancyPayload } from "./lib/data.js";
 import { createVacancy, getVacancyById, listVacancies, deleteVacancy } from "./lib/api.js";
 
 export const options = {
+    tags: {testid: "load"},
     scenarios: {
         read_heavy: {
             executor: "ramping-vus",
