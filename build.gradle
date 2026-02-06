@@ -59,23 +59,31 @@ def deployDir = file("${projectDir}/deploy")
 def isWindows = System.getProperty("os.name").toLowerCase().contains("win")
 def dockerPrefix = isWindows ? ["cmd", "/c", "docker"] : ["docker"]
 
-tasks.register("composeUp", Exec) {
-    group = "docker"
-    description = "Start stack (default docker-compose.yml)"
-    workingDir = deployDir
-    commandLine dockerPrefix + ["compose", "up", "-d", "--build"]
-}
+def composeBase = ["compose"]
+def composeLocalFiles = [
+        "-f", "docker-compose.yml",
+        "-f", "docker-compose.build.yml",
+        "-f", "docker-compose.perf-limits.yml"
+]
 
-tasks.register("composeUpLimits", Exec) {
+tasks.register("composeUpLocal", Exec) {
     group = "docker"
-    description = "Start stack with perf limits (docker-compose + perf-limits override)"
+    description = "Start stack locally (docker-compose.yml + docker-compose.build.yml)"
     workingDir = deployDir
-    commandLine dockerPrefix + [
-            "compose",
+    commandLine dockerPrefix + composeBase + [
             "-f", "docker-compose.yml",
-            "-f", "docker-compose.perf-limits.yml",
+            "-f", "docker-compose.build.yml",
             "up", "-d", "--build"
     ]
+    standardOutput = System.out
+    errorOutput = System.err
+}
+
+tasks.register("composeUpLocalLimits", Exec) {
+    group = "docker"
+    description = "Start stack locally with perf limits (docker-compose.yml + build + perf-limits)"
+    workingDir = deployDir
+    commandLine dockerPrefix + composeBase + composeLocalFiles + ["up", "-d", "--build"]
     standardOutput = System.out
     errorOutput = System.err
 }
@@ -84,46 +92,60 @@ tasks.register("composeDown", Exec) {
     group = "docker"
     description = "Stop stack and remove volumes"
     workingDir = deployDir
-    commandLine dockerPrefix + ["compose", "down", "-v"]
+    commandLine dockerPrefix + composeBase + ["down", "-v"]
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
-def k6Cmd = { String scriptPath ->
-    dockerPrefix + ["compose", "--profile", "loadtest", "run", "--rm", "k6", "run", scriptPath]
+def k6Cmd = { String containerScriptPath ->
+    dockerPrefix + composeBase + composeLocalFiles + [
+            "--profile", "loadtest",
+            "run", "--rm",
+            "k6",
+            "run",
+            "--out", "experimental-prometheus-rw",
+            containerScriptPath
+    ]
 }
 
 tasks.register("k6Smoke", Exec) {
     group = "k6"
-    description = "Run k6 smoke test"
+    description = "Run k6 smoke test (local compose with build+limits)"
     workingDir = deployDir
     commandLine k6Cmd("perf/k6/smoke.js")
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
 tasks.register("k6Load", Exec) {
     group = "k6"
-    description = "Run k6 load test"
+    description = "Run k6 load test (local compose with build+limits)"
     workingDir = deployDir
     commandLine k6Cmd("perf/k6/load.js")
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
 tasks.register("k6Stress", Exec) {
     group = "k6"
-    description = "Run k6 stress test"
+    description = "Run k6 stress test (local compose with build+limits)"
     workingDir = deployDir
     commandLine k6Cmd("perf/k6/stress.js")
+    standardOutput = System.out
+    errorOutput = System.err
 }
 
 tasks.register("perfLoadLocal") {
     group = "k6"
-    description = "Up (with limits) -> run load -> keep stack running"
-    dependsOn "composeUpLimits"
+    description = "Up (local build + limits) -> run load -> keep stack running"
+    dependsOn "composeUpLocalLimits"
     dependsOn "k6Load"
 }
 
 tasks.register("perfLoadLocalClean") {
     group = "k6"
-    description = "Up (with limits) -> run load -> down -v"
-    dependsOn "composeUpLimits"
+    description = "Up (local build + limits) -> run load -> down -v"
+    dependsOn "composeUpLocalLimits"
     dependsOn "k6Load"
     finalizedBy "composeDown"
 }
-

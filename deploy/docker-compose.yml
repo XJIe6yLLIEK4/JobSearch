@@ -1,8 +1,6 @@
 services:
   app:
     image: ${REGISTRY_IMAGE}:${IMAGE_TAG:-latest}
-    build:
-      context: ${BUILD_CONTEXT}
     container_name: app-jobsearch
     ports:
       - "${APP_BIND}:${APP_PORT}:8080"
@@ -114,11 +112,9 @@ services:
 
   k6:
     profiles: ["loadtest"]
-    image: grafana/k6:0.45.0
+    image: ${K6_REGISTRY_IMAGE}:${K6_IMAGE_TAG:-latest}
     container_name: k6
-    working_dir: /work
-    volumes:
-      - ${K6_ROOT_DIR}:/work
+    working_dir: /loadtest
     environment:
       - BASE_URL=http://app:8080
       - SEED_COUNT=200
