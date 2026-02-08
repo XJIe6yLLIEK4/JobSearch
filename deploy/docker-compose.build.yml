@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: ${BUILD_CONTEXT}
+
+  k6:
+    build:
+      context: ${BUILD_CONTEXT}
+      dockerfile: perf/Dockerfile
