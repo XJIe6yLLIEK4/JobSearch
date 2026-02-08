@@ -158,6 +158,8 @@ jobs:
       - name: Sync deploy files to server
         run: |
           rsync -az --delete \
+            --exclude='.env.prod' \
+            --exclude='.env.k6' \
             ./deploy/ \
             ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/opt/jobsearch/
 
